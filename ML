@@ -1,0 +1,52 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.svm import SVR
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+file_path = 'CarPrice_Assignment.csv'
+CD = pd.read_csv(file_path)
+print(CD.columns)
+CD = CD.drop(columns=['car_ID'])
+
+x = CD.drop(columns=['price'])
+y = CD['price']
+
+CC = x.select_dtypes(include=['object']).columns
+
+E = OneHotEncoder(drop='first', sparse_output=False)
+XE = pd.DataFrame(E.fit_transform(x[CC]), columns=E.get_feature_names_out(CC))
+
+x = x.drop(columns=CC)
+x = pd.concat([x.reset_index(drop=True), XE.reset_index(drop=True)], axis=1)
+
+S = StandardScaler()
+XS = pd.DataFrame(S.fit_transform(x), columns=x.columns)
+
+x_train, x_test, y_train, y_test = train_test_split(XS, y, test_size=0.3, random_state=42)
+
+M = {
+    'linear regression': LinearRegression(),
+    'decision tree regressor': DecisionTreeRegressor(random_state=42),
+    'random forest regressor': RandomForestRegressor(random_state=42),
+    'gradient boosting regressor': GradientBoostingRegressor(random_state=42),
+    'support vector regressor': SVR()
+}
+
+PM = {}
+
+for MN, model in M.items():
+    model.fit(x_train, y_train)
+    YP = model.predict(x_test)
+    r2 = r2_score(y_test, YP)
+    mse = mean_squared_error(y_test, YP)
+    mae = mean_absolute_error(y_test, YP)
+    PM[MN] = {'r-squared': r2, 'mse': mse, 'mae': mae}
+
+PDF = pd.DataFrame(PM).T
+PDF.sort_values(by='r-squared', ascending=False, inplace=True)
+
+
+
